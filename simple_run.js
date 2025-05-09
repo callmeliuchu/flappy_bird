@@ -247,7 +247,7 @@ async function runTraining() {
         epochElement.textContent = epoch;
         
         // 每100轮展示一次游戏效果
-        if (epoch % 1000 === 0) {
+        if (epoch % 10000 === 0) {
             env.render_mode = "human";
             statusElement.textContent = "正在渲染游戏";
             console.log(`第${epoch}轮训练，展示游戏效果`);
