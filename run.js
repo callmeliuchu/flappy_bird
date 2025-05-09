@@ -11,8 +11,6 @@
  *     print(action,reward)
  */
 
-import FlappyBirdEnv from './env.js';
-
 class FlappyBirdRunner {
   constructor() {
     // 创建环境实例
@@ -100,6 +98,3 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('Flappy Bird 运行已开始。在控制台中，您可以使用 window.flappyRunner 来访问运行实例。');
   console.log('如果需要重新开始，请在控制台中执行: window.flappyRunner.run()');
 });
-
-// 导出运行类
-export default FlappyBirdRunner; 
