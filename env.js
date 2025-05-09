@@ -260,85 +260,74 @@ class FlappyBirdEnv {
    * @private
    */
   _getObservation() {
-    // 基本观察：鸟的位置、速度和最近管道的位置
+    // 创建一个包含12个维度的观察向量
     const observation = {
+      // 1-2: 鸟的基本信息
       birdY: this.bird.y / this.options.height, // 归一化的鸟的高度
-      birdVelocity: this.bird.velocity / 10, // 归一化的鸟的速度
+      birdVelocity: this.bird.velocity / 20, // 归一化的鸟的速度
+      
+      // 3-6: 最近管道的信息
+      pipeDistance: 1.0, // 默认值，如果没有管道
+      pipeTopHeight: 0.5, // 默认值
+      pipeBottomY: 0.5, // 默认值
+      pipeWidth: 52 / this.options.width, // 归一化的管道宽度
+      
+      // 7-10: 第二近管道的信息
+      nextPipeDistance: 1.5, // 默认值
+      nextPipeTopHeight: 0.5, // 默认值
+      nextPipeBottomY: 0.5, // 默认值
+      nextPipeWidth: 52 / this.options.width, // 归一化的管道宽度
+      
+    //   // 11-12: 额外游戏状态信息
+    //   normalizedScore: this.score / 100, // 归一化的分数
+    //   gameSpeed: this.options.pipeSpeed / 10 // 归一化的游戏速度
     };
     
-    // 找到最近的管道（在鸟的右侧）
-    const nextPipe = this.pipes.find(pipe => pipe.x + pipe.width > this.bird.x);
+    // 找到最近的两个管道（在鸟的右侧）
+    const aheadPipes = this.pipes
+      .filter(pipe => pipe.x > this.bird.x)
+      .sort((a, b) => a.x - b.x);
     
-    if (nextPipe) {
-      observation.pipeX = (nextPipe.x - this.bird.x) / this.options.width;
-      observation.pipeTopY = nextPipe.height / this.options.height;
-      observation.pipeBottomY = (nextPipe.y + nextPipe.height) / this.options.height;
-    } else {
-      observation.pipeX = 1.0;
-      observation.pipeTopY = 0.5;
-      observation.pipeBottomY = 0.5;
+    // 获取最近的管道对（上下两根管道算一对）
+    const pipePairs = [];
+    for (let i = 0; i < aheadPipes.length; i += 2) {
+      if (i + 1 < aheadPipes.length) {
+        pipePairs.push([aheadPipes[i], aheadPipes[i + 1]]);
+      }
     }
     
-    // 如果使用激光雷达，添加更多观察
-    if (this.options.useLidar) {
-      observation.lidarReadings = this._getLidarReadings();
+    // 更新最近管道的信息
+    if (pipePairs.length > 0) {
+      const [topPipe, bottomPipe] = pipePairs[0];
+      
+      // 确保 topPipe 是上方的管道，bottomPipe 是下方的管道
+      const actualTopPipe = topPipe.y === 0 ? topPipe : bottomPipe;
+      const actualBottomPipe = topPipe.y === 0 ? bottomPipe : topPipe;
+      
+      observation.pipeDistance = (actualTopPipe.x - this.bird.x) / this.options.width;
+      observation.pipeTopHeight = actualTopPipe.height / this.options.height;
+      observation.pipeBottomY = actualBottomPipe.y / this.options.height;
+      
+      // 计算管道间隙的中心点
+      const gapCenterY = actualTopPipe.height + this.options.pipeGap / 2;
+      // 计算鸟到间隙中心的垂直距离
+      observation.gapVerticalDistance = (this.bird.y - gapCenterY) / this.options.height;
+    }
+    
+    // 更新第二近管道的信息
+    if (pipePairs.length > 1) {
+      const [topPipe, bottomPipe] = pipePairs[1];
+      
+      // 确保 topPipe 是上方的管道，bottomPipe 是下方的管道
+      const actualTopPipe = topPipe.y === 0 ? topPipe : bottomPipe;
+      const actualBottomPipe = topPipe.y === 0 ? bottomPipe : topPipe;
+      
+      observation.nextPipeDistance = (actualTopPipe.x - this.bird.x) / this.options.width;
+      observation.nextPipeTopHeight = actualTopPipe.height / this.options.height;
+      observation.nextPipeBottomY = actualBottomPipe.y / this.options.height;
     }
     
     return observation;
-  }
-  
-  /**
-   * 获取激光雷达读数（如果启用）
-   * @returns {Array} 激光雷达读数数组
-   * @private
-   */
-  _getLidarReadings() {
-    const readings = [];
-    const numRays = 8;
-    const maxDistance = Math.sqrt(this.options.width * this.options.width + this.options.height * this.options.height);
-    
-    for (let i = 0; i < numRays; i++) {
-      const angle = (i / numRays) * 2 * Math.PI;
-      const dx = Math.cos(angle);
-      const dy = Math.sin(angle);
-      
-      let distance = maxDistance;
-      
-      // 检查与管道的交点
-      for (const pipe of this.pipes) {
-        // 简化的射线-矩形相交检测
-        // 这里只是一个简化版本，实际应用中可能需要更复杂的算法
-        const rayDistance = this._rayRectIntersection(
-          this.bird.x + this.bird.width / 2,
-          this.bird.y + this.bird.height / 2,
-          dx, dy, pipe.x, pipe.y, pipe.width, pipe.height
-        );
-        
-        if (rayDistance < distance) {
-          distance = rayDistance;
-        }
-      }
-      
-      // 归一化距离
-      readings.push(distance / maxDistance);
-    }
-    
-    return readings;
-  }
-  
-  /**
-   * 射线与矩形相交检测
-   * @returns {Number} 相交距离，如果不相交则返回Infinity
-   * @private
-   */
-  _rayRectIntersection(rayOriginX, rayOriginY, rayDirX, rayDirY, rectX, rectY, rectWidth, rectHeight) {
-    // 简化的实现，实际应用中可能需要更精确的算法
-    const minDistance = Infinity;
-    
-    // 这里应该有详细的射线-矩形相交检测算法
-    // 为简化起见，返回一个估计值
-    
-    return minDistance;
   }
   
   /**

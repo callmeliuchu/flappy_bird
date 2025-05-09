@@ -90,8 +90,8 @@ function cross_entropy_derive(probs,ys){
 
 class Agent{
     constructor(n_states,n_actions){
-        this.policy_net = new Network(n_states, 500, n_actions);
-        this.value_net = new Network2(n_states, 500, 1);
+        this.policy_net = new Network(n_states, 512, n_actions);
+        this.value_net = new Network2(n_states, 512, 1);
 
         this.n_states = n_states;
         this.n_actions = n_actions;
@@ -199,7 +199,7 @@ const { observation } = env.reset();
 
 console.log('初始状态:', observation);
 
-let agent = new Agent(5, 2);
+let agent = new Agent(5, 2);  // 5维状态，2个可能的动作
 
 // 添加训练状态显示元素
 const statusElement = document.getElementById('trainingStatus');
@@ -264,7 +264,15 @@ async function runTraining() {
         let total_reward = 0;
         let count = 0;
         while(1){
-            state = [state.birdY,state.birdVelocity,state.pipeX,state.pipeTopY,state.pipeBottomY];
+            // 使用5维状态表示
+            state = [
+                state.birdY,               // 鸟的归一化高度位置
+                state.birdVelocity,        // 鸟的归一化速度
+                state.pipeDistance || state.pipeX, // 到最近管道的归一化水平距离
+                state.pipeTopHeight,       // 最近上方管道的归一化高度
+                state.pipeBottomY          // 最近下方管道的归一化 Y 坐标
+            ];
+            
             let [state1, h, h_relu, out, out_softmax,action] = agent.get_action(state);
             let { observation: nextState, reward, terminated, truncated } = env.step(action);
             total_reward += reward;
