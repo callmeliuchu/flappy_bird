@@ -146,7 +146,7 @@ class Agent{
             let rs =  [];
             for(let k=0;k<this.n_actions;k++){
                 if(k == action){
-                    rs.push(reward);
+                    rs.push(reward-value_out[0]);
                 }else{
                     rs.push(0);
                 }
@@ -163,11 +163,11 @@ class Agent{
             // console.log('dw2',dW2)
             this.policy_net.backward(dW1,dW2,0.05/rewards.length);
         }
-        // for(let e=0;e<4;e++){
-        //     for(let i=0;i<values_dw.length;i++){
-        //         this.value_net.backward(values_dw[i][0],values_dw[i][1],0.01/rewards.length);
-        //     }
-        // }
+        for(let e=0;e<4;e++){
+            for(let i=0;i<values_dw.length;i++){
+                this.value_net.backward(values_dw[i][0],values_dw[i][1],0.01/rewards.length);
+            }
+        }
 
 
 
