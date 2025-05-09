@@ -20,9 +20,20 @@ if (typeof FlappyBirdEnv === 'undefined') {
     console.error('FlappyBirdEnv 未定义！请确保 env.js 已正确加载。');
 }
 
-
-
-
+function discount_rewards(rewards,gamma){
+    let res = [];
+    let adding = 0;
+    for(let i=rewards.length-1;i>=0;i--){
+        adding = rewards[i] + gamma * adding;
+        res.push(adding);
+    }
+    res = res.reverse();
+    // mean std
+    let mean = res.reduce((a,b)=>a+b,0)/res.length;
+    let std = Math.sqrt(res.reduce((a,b)=>a+Math.pow(b-mean,2),0)/res.length);
+    res = res.map(x=>x/(std+1e-15));
+    return res; 
+}
 
 function sampleAction(probs) {
     // 生成一个0到1之间的随机数
@@ -41,23 +52,6 @@ function sampleAction(probs) {
     return probs.length - 1;
 }
 
-// let n_states = 8;
-// let n_actions = 4;
-
-function discount_rewards(rewards,gamma){
-    let res = [];
-    let adding = 0;
-    for(let i=rewards.length-1;i>=0;i--){
-        adding = rewards[i] + gamma * adding;
-        res.push(adding);
-    }
-    res = res.reverse();
-    // mean std
-    let mean = res.reduce((a,b)=>a+b,0)/res.length;
-    let std = Math.sqrt(res.reduce((a,b)=>a+Math.pow(b-mean,2),0)/res.length);
-    res = res.map(x=>x/(std+1e-15));
-    return res; 
-}
 
 
 function mean_square_error(y,y_hat){
@@ -92,6 +86,7 @@ function cross_entropy_derive(probs,ys){
     }
     return res;
 }
+
 
 class Agent{
     constructor(n_states,n_actions){
@@ -190,6 +185,34 @@ class Agent{
 
 
 
+const env = new FlappyBirdEnv({ renderMode: 'human' }); // 默认设置为human模式以便初始化渲染
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// 设置画布尺寸
+canvas.width = 400;
+canvas.height = 600;
+
+// 初始化环境
+env.reset();
+const { observation } = env.reset();
+
+console.log('初始状态:', observation);
+
+let agent = new Agent(5, 2);
+
+// 添加训练状态显示元素
+const statusElement = document.getElementById('trainingStatus');
+const rewardElement = document.getElementById('totalReward');
+const epochElement = document.getElementById('currentEpoch');
+
+
+
+
+
+
+
+
 // // 模拟游戏循环 (对应 while not done:)
 // function runSimulation() {
 //   let done = false;
@@ -216,3 +239,56 @@ class Agent{
 
 // // 运行模拟
 // runSimulation(); 
+
+// 将训练循环包装在一个异步函数中
+async function runTraining() {
+    for(let epoch=0;epoch<50000;epoch++){
+        // 更新训练状态显示
+        epochElement.textContent = epoch;
+        
+        // 每100轮展示一次游戏效果
+        if (epoch % 100 === 0) {
+            env.render_mode = "human";
+            statusElement.textContent = "正在渲染游戏";
+            console.log(`第${epoch}轮训练，展示游戏效果`);
+        } else {
+            env.render_mode = "none";
+            statusElement.textContent = "快速训练中";
+        }
+        
+        let rewards = [];
+        let agent_outputs = [];
+        let {observation:state,info} = env.reset();
+        // {birdY: 0.1640625, birdVelocity: -1, pipeX: 0.6527777777777778, pipeTopY: 0.669921875, pipeBottomY: 0.669921875}
+        // console.log('state',state);
+        let total_reward = 0;
+        let count = 0;
+        while(1){
+            state = [state.birdY,state.birdVelocity,state.pipeX,state.pipeTopY,state.pipeBottomY];
+            let [state1, h, h_relu, out, out_softmax,action] = agent.get_action(state);
+            let { observation: nextState, reward, terminated, truncated } = env.step(action);
+            total_reward += reward;
+            count++;
+            rewards.push(reward);
+            agent_outputs.push([state1, h, h_relu, out, out_softmax,action]);
+            state = nextState;
+            
+            // 更新奖励显示
+            rewardElement.textContent = total_reward.toFixed(2);
+            
+            if(terminated || truncated){
+                break;
+            }
+            
+            // 添加延迟以便在渲染模式下可以看清游戏过程
+            if (env.render_mode === "human" && epoch % 100 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+        }
+        agent.update(rewards,agent_outputs);
+        console.log('rewards1111',total_reward,count);
+    }
+}
+
+// 调用异步训练函数
+runTraining(); 

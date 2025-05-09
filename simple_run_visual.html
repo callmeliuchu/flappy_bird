@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird 强化学习训练可视化</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        .game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        canvas {
+            background-color: #70c5ce;
+        }
+        .status-panel {
+            width: 400px;
+            background-color: white;
+            border: 2px solid #333;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .status-label {
+            font-weight: bold;
+        }
+        .status-value {
+            color: #2a6496;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Flappy Bird 强化学习训练可视化</h1>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    
+    <div class="status-panel">
+        <div class="status-row">
+            <span class="status-label">训练状态:</span>
+            <span id="trainingStatus" class="status-value">初始化中...</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">当前轮次:</span>
+            <span id="currentEpoch" class="status-value">0</span>
+        </div>
+        <div class="status-row">
+            <span class="status-label">累计奖励:</span>
+            <span id="totalReward" class="status-value">0</span>
+        </div>
+    </div>
+
+    <!-- 加载环境和智能体代码 -->
+    <script src="env.js"></script>
+    <script src="network.js"></script>
+    <script src="render.js"></script>
+    <!-- 加载训练代码 -->
+    <script src="simple_run.js"></script>
+</body>
+</html> 
