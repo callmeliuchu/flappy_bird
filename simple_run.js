@@ -20,8 +20,7 @@ if (typeof FlappyBirdEnv === 'undefined') {
     console.error('FlappyBirdEnv 未定义！请确保 env.js 已正确加载。');
 }
 
-// 创建环境实例 (renderMode 设为 'none' 以避免渲染)
-const env = new FlappyBirdEnv({ renderMode: 'none' });
+
 
 
 
@@ -189,48 +188,6 @@ class Agent{
         }
 }
 
-
-
-// 重置环境 (对应 env.reset() 和 state,_ = env.reset())
-env.reset();
-const { observation } = env.reset();
-
-console.log('初始状态:', observation);
-
-let agent = new Agent(5, 2);
-
-for(let epoch=0;epoch<50000;epoch++){
-    // 每100轮展示一次游戏效果
-    if (epoch % 100 === 0) {
-        env.render_mode = "human";
-        console.log(`第${epoch}轮训练，展示游戏效果`);
-    } else {
-        env.render_mode = "none";
-    }
-    
-    let rewards = [];
-    let agent_outputs = [];
-    let {observation:state,info} = env.reset();
-    // {birdY: 0.1640625, birdVelocity: -1, pipeX: 0.6527777777777778, pipeTopY: 0.669921875, pipeBottomY: 0.669921875}
-    // console.log('state',state);
-    let total_reward = 0;
-    let count = 0;
-    while(1){
-        state = [state.birdY,state.birdVelocity,state.pipeX,state.pipeTopY,state.pipeBottomY];
-        let [state1, h, h_relu, out, out_softmax,action] = agent.get_action(state);
-        let { observation: nextState, reward, terminated, truncated } = env.step(action);
-        total_reward += reward;
-        count++;
-        rewards.push(reward);
-        agent_outputs.push([state1, h, h_relu, out, out_softmax,action]);
-        state = nextState;
-        if(terminated || truncated){
-            break;
-        }
-    }
-    agent.update(rewards,agent_outputs);
-    console.log('rewards1111',total_reward,count);
-}
 
 
 // // 模拟游戏循环 (对应 while not done:)
