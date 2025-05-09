@@ -186,12 +186,7 @@ class Agent{
 
 
 const env = new FlappyBirdEnv({ renderMode: 'human' }); // 默认设置为human模式以便初始化渲染
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
 
-// 设置画布尺寸
-canvas.width = 400;
-canvas.height = 600;
 
 // 初始化环境
 env.reset();
