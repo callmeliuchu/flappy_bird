@@ -20,7 +20,8 @@ class FlappyBirdEnv {
       gravity: options.gravity || 1.5,        // 增加重力加速度
       birdVelocity: options.birdVelocity || -12, // 增加跳跃力度
       pipeSpeed: options.pipeSpeed || 4,      // 增加管道移动速度
-      fps: options.fps || 30
+      fps: options.fps || 60,  // 增加默认帧率到60
+      lowDetailMode: options.lowDetailMode || false  // 添加低细节模式选项
     };
 
     // 游戏状态
@@ -42,7 +43,9 @@ class FlappyBirdEnv {
       width: this.options.width,
       height: this.options.height,
       renderMode: this.options.renderMode,
-      parentElement: options.parentElement || document.body
+      parentElement: options.parentElement || document.body,
+      fps: this.options.fps,
+      lowDetailMode: this.options.lowDetailMode
     });
 
     this.discountFactor = 0.99; // 奖励衰减因子
