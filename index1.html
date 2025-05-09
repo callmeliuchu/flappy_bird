@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird JS</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f0f0; }
+        canvas { border: 1px solid black; }
+    </style>
+</head>
+<body>
+    <!-- Canvas 元素将由 env.js 动态创建并添加到 body 中 -->
+    <!-- 确保按正确顺序加载脚本 -->
+    <script src="render.js"></script>
+    <script src="env.js"></script>
+    <script src="network.js"></script>
+    <script src="simple_run.js"></script>
+
+    <script>
+        // 创建环境
+        const env = new FlappyBirdEnv({
+            renderMode: 'human', // 确保设置为 'human' 以便渲染
+            useLidar: false
+        });
+
+        let gameRunning = false;
+        let lastTime = 0;
+        const gameFPS = env.options.fps; // 从env获取FPS
+        const frameInterval = 1000 / gameFPS;
+
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+
+            const deltaTime = currentTime - lastTime;
+
+            if (deltaTime >= frameInterval) {
+                lastTime = currentTime - (deltaTime % frameInterval); // 调整 lastTime
+
+                // 根据 currentAction 执行游戏步骤
+                const { observation, reward, terminated, truncated, info } = env.step(currentAction);
+                
+                // 重置动作，除非有新的按键输入覆盖
+                currentAction = 0; 
+
+                if (terminated) {
+                    console.log('Game Over! Final score:', info.score);
+                    // 可以在这里添加重新开始游戏的逻辑
+                    // 例如：
+                    // alert(`游戏结束! 分数: ${info.score}. 按 OK 重新开始.`);
+                    // startGame(); 
+                    // 或者显示一个 "重新开始" 按钮
+                    showRestartButton();
+                    gameRunning = false;
+                    return;
+                }
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        let currentAction = 0; // 0: 不动, 1: 跳跃, 2: 向下加速
+
+        function handleInput(actionType) {
+            // 只有在游戏进行中且有明确动作时才设置
+            if (gameRunning && (actionType === 1 || actionType === 2)) {
+                currentAction = actionType;
+            }
+        }
+
+        // 监听键盘事件
+        document.addEventListener('keydown', (event) => {
+            if (!gameRunning) return; // 游戏未运行时不处理输入
+
+            if (event.code === 'Space' || event.code === 'ArrowUp') {
+                handleInput(1); // 跳跃动作
+            } else if (event.code === 'ArrowDown') {
+                handleInput(2); // 向下加速动作
+            }
+        });
+
+        // 鼠标点击事件 (保持跳跃功能)
+        document.addEventListener('mousedown', () => {
+            if (gameRunning) {
+                handleInput(1); // 跳跃动作
+            }
+        });
+        
+        // 触摸事件支持 (保持跳跃功能)
+        document.addEventListener('touchstart', () => {
+            if (gameRunning) {
+                handleInput(1); // 跳跃动作
+            }
+        });
+
+        function startGame() {
+            env.reset();
+            gameRunning = true;
+            currentAction = 0; // 重置动作
+            lastTime = performance.now();
+            hideRestartButton();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function showRestartButton() {
+            let restartButton = document.getElementById('restartButton');
+            if (!restartButton) {
+                restartButton = document.createElement('button');
+                restartButton.id = 'restartButton';
+                restartButton.textContent = '重新开始';
+                restartButton.style.position = 'absolute';
+                restartButton.style.top = '10px';
+                restartButton.style.left = '10px';
+                restartButton.style.padding = '10px 20px';
+                restartButton.style.fontSize = '16px';
+                restartButton.style.cursor = 'pointer';
+                document.body.appendChild(restartButton);
+                restartButton.addEventListener('click', startGame);
+            }
+            restartButton.style.display = 'block';
+        }
+
+        function hideRestartButton() {
+            const restartButton = document.getElementById('restartButton');
+            if (restartButton) {
+                restartButton.style.display = 'none';
+            }
+        }
+
+        // 自动开始游戏
+        startGame();
+    </script>
+</body>
+</html> 
