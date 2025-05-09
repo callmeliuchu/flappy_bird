@@ -11,9 +11,13 @@
 </head>
 <body>
     <!-- Canvas 元素将由 env.js 动态创建并添加到 body 中 -->
-    <script type="module">
-        import FlappyBirdEnv from './env.js';
+    <!-- 确保按正确顺序加载脚本 -->
+    <script src="render.js"></script>
+    <script src="env.js"></script>
+    <script src="network.js"></script>
+    <script src="simple_run.js"></script>
 
+    <script>
         // 创建环境
         const env = new FlappyBirdEnv({
             renderMode: 'human', // 确保设置为 'human' 以便渲染

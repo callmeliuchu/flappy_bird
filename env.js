@@ -3,7 +3,10 @@
  * 模仿 Gymnasium 接口的 Flappy Bird 环境
  * 专注于物理和游戏逻辑，渲染逻辑已分离到 render.js
  */
-import FlappyBirdRenderer from './render.js';
+// 删除 import 语句
+// import FlappyBirdRenderer from './render.js';
+
+// 将 FlappyBirdRenderer 类定义放在这里，或者确保在 HTML 中先加载 render.js
 
 class FlappyBirdEnv {
   constructor(options = {}) {
@@ -335,5 +338,5 @@ class FlappyBirdEnv {
   }
 }
 
-// 导出环境
-export default FlappyBirdEnv; 
+// 删除 export 语句
+// export default FlappyBirdEnv; 

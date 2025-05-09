@@ -584,5 +584,3 @@ function run_all_tests() {
 if (typeof module !== 'undefined' && module.exports) {
     run_all_tests();
 }
-
-export {Network,Network2};

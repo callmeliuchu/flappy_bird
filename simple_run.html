@@ -3,12 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flappy Bird 简单运行</title>
+    <title>Flappy Bird JS - Simple Run</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #output { 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            height: 300px; 
+            overflow-y: auto;
+            margin-top: 20px;
+            font-family: monospace;
+        }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
 </head>
 <body>
-    <h1>Flappy Bird 简单运行</h1>
-    <p>请打开控制台查看输出结果 (F12 或右键 -> 检查 -> 控制台)</p>
-    <script type="module" src="simple_run.js"></script>
-    <script type="module" src="network.js"></script>
+    <h1>Flappy Bird JS - Simple Run</h1>
+    <div id="output"></div>
+
+    <!-- 确保按正确顺序加载脚本 -->
+    <script>
+        // 创建一个简单的渲染器替代，因为我们在simple_run中不需要实际渲染
+        class FlappyBirdRenderer {
+            constructor(options) {
+                this.renderMode = options.renderMode || 'none';
+            }
+            
+            getRenderMode() {
+                return this.renderMode;
+            }
+            
+            render(gameState) {
+                // 在simple_run模式下不做任何渲染
+            }
+            
+            close() {
+                // 清理资源
+            }
+        }
+        
+        // 重定向console.log到页面
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        
+        console.log = function() {
+            // 调用原始的console.log
+            originalConsoleLog.apply(console, arguments);
+            
+            // 将输出添加到页面
+            const output = document.getElementById('output');
+            const text = Array.from(arguments).join(' ');
+            output.innerHTML += text + '<br>';
+            
+            // 自动滚动到底部
+            output.scrollTop = output.scrollHeight;
+        };
+        
+        console.error = function() {
+            // 调用原始的console.error
+            originalConsoleError.apply(console, arguments);
+            
+            // 将错误输出添加到页面
+            const output = document.getElementById('output');
+            const text = Array.from(arguments).join(' ');
+            output.innerHTML += '<span class="error">' + text + '</span><br>';
+            
+            // 自动滚动到底部
+            output.scrollTop = output.scrollHeight;
+        };
+        
+        // 检查脚本加载状态
+        function checkScriptLoaded(scriptName, checkFunction) {
+            try {
+                if (typeof checkFunction === 'function' && checkFunction()) {
+                    console.log(`<span class="success">✓ ${scriptName} 已成功加载</span>`);
+                    return true;
+                } else {
+                    console.error(`✗ ${scriptName} 加载失败或未正确定义所需对象`);
+                    return false;
+                }
+            } catch (e) {
+                console.error(`✗ ${scriptName} 加载检查时出错: ${e.message}`);
+                return false;
+            }
+        }
+        
+        // 脚本加载错误处理
+        function handleScriptError(scriptSrc) {
+            return function(e) {
+                console.error(`加载脚本 ${scriptSrc} 时发生错误: ${e.type}`);
+            };
+        }
+        
+        // 动态加载脚本并确保按顺序执行
+        function loadScriptsSequentially(scripts) {
+            let promise = Promise.resolve();
+            
+            scripts.forEach(scriptSrc => {
+                promise = promise.then(() => {
+                    return new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = scriptSrc;
+                        script.onload = () => {
+                            console.log(`脚本 ${scriptSrc} 已加载`);
+                            resolve();
+                        };
+                        script.onerror = (e) => {
+                            console.error(`脚本 ${scriptSrc} 加载失败`);
+                            reject(e);
+                        };
+                        document.body.appendChild(script);
+                    }).catch(handleScriptError(scriptSrc));
+                });
+            });
+            
+            return promise.then(() => {
+                console.log('所有脚本加载完成，开始检查关键对象');
+                
+                // 检查关键对象是否存在
+                const envLoaded = checkScriptLoaded('env.js', () => typeof FlappyBirdEnv !== 'undefined');
+                const networkLoaded = checkScriptLoaded('network.js', () => typeof NeuralNetwork !== 'undefined');
+                
+                if (envLoaded && networkLoaded) {
+                    console.log('<span class="success">所有必要组件已加载，开始运行游戏</span>');
+                    // 此时可以安全地初始化游戏
+                    initGame();
+                } else {
+                    console.error('某些必要组件未能加载，游戏无法启动');
+                }
+            });
+        }
+        
+        // 初始化游戏的函数
+        function initGame() {
+            try {
+                // 这里放置原来在simple_run.js中的初始化代码
+                // 或者保持simple_run.js的代码不变，只是确保它在正确的时间被调用
+                console.log('游戏初始化中...');
+                
+                // 如果simple_run.js中有全局初始化函数，可以在这里调用
+                if (typeof runSimulation === 'function') {
+                    runSimulation();
+                }
+            } catch (e) {
+                console.error(`游戏初始化失败: ${e.message}`);
+                console.error(e.stack);
+            }
+        }
+    </script>
+    
+    <!-- 使用动态加载替代静态脚本标签 -->
+    <script>
+        // 页面加载完成后开始加载脚本
+        window.addEventListener('DOMContentLoaded', () => {
+            loadScriptsSequentially([
+                'env.js',
+                'network.js',
+                'simple_run.js'
+            ]);
+        });
+    </script>
 </body>
 </html> 

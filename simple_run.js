@@ -11,8 +11,15 @@
  *     print(action,reward)
  */
 
-import FlappyBirdEnv from './env.js';
-import {Network,Network2} from './network.js';
+// 删除 import 语句
+// import FlappyBirdEnv from './env.js';
+// import {Network,Network2} from './network.js';
+
+// 确保 FlappyBirdEnv 已经在全局作用域中定义
+if (typeof FlappyBirdEnv === 'undefined') {
+    console.error('FlappyBirdEnv 未定义！请确保 env.js 已正确加载。');
+}
+
 // 创建环境实例 (renderMode 设为 'none' 以避免渲染)
 const env = new FlappyBirdEnv({ renderMode: 'none' });
 
