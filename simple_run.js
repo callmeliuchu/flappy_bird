@@ -152,13 +152,13 @@ class Agent{
             let rs =  [];
             for(let k=0;k<this.n_actions;k++){
                 if(k == action){
-                    rs.push(reward-value_out[0]);
+                    rs.push(reward);
                 }else{
                     rs.push(0);
                 }
             }
 
-            let entropy = cross_entropy(out_softmax,rs);
+            // let entropy = cross_entropy(out_softmax,rs);
             // console.log('entropy',entropy);
             let dout = cross_entropy_derive(out_softmax,rs);
             // console.log(dout);
@@ -169,11 +169,11 @@ class Agent{
             // console.log('dw2',dW2)
             this.policy_net.backward(dW1,dW2,0.01/rewards.length);
         }
-        for(let e=0;e<4;e++){
-            for(let i=0;i<values_dw.length;i++){
-                this.value_net.backward(values_dw[i][0],values_dw[i][1],0.01/rewards.length);
-            }
-        }
+        // for(let e=0;e<4;e++){
+        //     for(let i=0;i<values_dw.length;i++){
+        //         this.value_net.backward(values_dw[i][0],values_dw[i][1],0.01/rewards.length);
+        //     }
+        // }
 
 
 
@@ -199,18 +199,28 @@ console.log('初始状态:', observation);
 
 let agent = new Agent(5, 2);
 
-for(let epoch=0;epoch<500;epoch++){
+for(let epoch=0;epoch<50000;epoch++){
+    // 每100轮展示一次游戏效果
+    if (epoch % 100 === 0) {
+        env.render_mode = "human";
+        console.log(`第${epoch}轮训练，展示游戏效果`);
+    } else {
+        env.render_mode = "none";
+    }
+    
     let rewards = [];
     let agent_outputs = [];
     let {observation:state,info} = env.reset();
     // {birdY: 0.1640625, birdVelocity: -1, pipeX: 0.6527777777777778, pipeTopY: 0.669921875, pipeBottomY: 0.669921875}
     // console.log('state',state);
     let total_reward = 0;
+    let count = 0;
     while(1){
         state = [state.birdY,state.birdVelocity,state.pipeX,state.pipeTopY,state.pipeBottomY];
         let [state1, h, h_relu, out, out_softmax,action] = agent.get_action(state);
         let { observation: nextState, reward, terminated, truncated } = env.step(action);
         total_reward += reward;
+        count++;
         rewards.push(reward);
         agent_outputs.push([state1, h, h_relu, out, out_softmax,action]);
         state = nextState;
@@ -219,7 +229,7 @@ for(let epoch=0;epoch<500;epoch++){
         }
     }
     agent.update(rewards,agent_outputs);
-    console.log('rewards1111',total_reward);
+    console.log('rewards1111',total_reward,count);
 }
 
 
