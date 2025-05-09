@@ -161,7 +161,7 @@ class Agent{
             let [dW1,dW2] = this.policy_net.grad(state_arr,h,h_relu,out,out_softmax,dout);
             // console.log('dw1',dW1)
             // console.log('dw2',dW2)
-            this.policy_net.backward(dW1,dW2,0.01/rewards.length);
+            this.policy_net.backward(dW1,dW2,0.05/rewards.length);
         }
         // for(let e=0;e<4;e++){
         //     for(let i=0;i<values_dw.length;i++){
