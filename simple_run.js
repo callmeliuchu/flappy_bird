@@ -90,8 +90,8 @@ function cross_entropy_derive(probs,ys){
 
 class Agent{
     constructor(n_states,n_actions){
-        this.policy_net = new Network(n_states, 200, n_actions);
-        this.value_net = new Network2(n_states, 200, 1);
+        this.policy_net = new Network(n_states, 500, n_actions);
+        this.value_net = new Network2(n_states, 500, 1);
 
         this.n_states = n_states;
         this.n_actions = n_actions;

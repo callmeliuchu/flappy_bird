@@ -16,10 +16,10 @@ class FlappyBirdEnv {
       useLidar: options.useLidar !== undefined ? options.useLidar : false,
       width: options.width || 288,
       height: options.height || 512,
-      pipeGap: options.pipeGap || 100,
-      gravity: options.gravity || 1,
-      birdVelocity: options.birdVelocity || -10,
-      pipeSpeed: options.pipeSpeed || 2,
+      pipeGap: options.pipeGap || 150,
+      gravity: options.gravity || 1.5,        // 增加重力加速度
+      birdVelocity: options.birdVelocity || -12, // 增加跳跃力度
+      pipeSpeed: options.pipeSpeed || 4,      // 增加管道移动速度
       fps: options.fps || 30
     };
 
@@ -67,8 +67,8 @@ class FlappyBirdEnv {
     this.gameOver = false;
     this.frames = 0;
     
-    // 添加初始管道
-    this._addPipe();
+    // 添加初始管道 - 将初始管道放置得更近一些
+    this._addPipe(this.options.width * 0.6); // 将初始管道放在屏幕宽度的60%处
     
     // 获取初始观察
     const observation = this._getObservation();
@@ -101,8 +101,8 @@ class FlappyBirdEnv {
     
     this.bird.y += this.bird.velocity;
     
-    // 每隔一定帧数添加新管道
-    if (this.frames % 100 === 0) {
+    // 每隔一定帧数添加新管道 - 减少帧数，使管道生成更频繁
+    if (this.frames % 40 === 0) { // 从60改为40，更快生成管道
       this._addPipe();
     }
     
@@ -186,16 +186,17 @@ class FlappyBirdEnv {
   
   /**
    * 添加新管道
+   * @param {Number} xPosition - 管道的x坐标，默认为屏幕宽度
    * @private
    */
-  _addPipe() {
+  _addPipe(xPosition = this.options.width) {
     const pipeWidth = 52;
     const minHeight = 50;
     const maxHeight = this.options.height - this.options.pipeGap - minHeight;
     const height = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
     
     this.pipes.push({
-      x: this.options.width,
+      x: xPosition,
       y: 0,
       width: pipeWidth,
       height: height,
@@ -203,7 +204,7 @@ class FlappyBirdEnv {
     });
     
     this.pipes.push({
-      x: this.options.width,
+      x: xPosition,
       y: height + this.options.pipeGap,
       width: pipeWidth,
       height: this.options.height - height - this.options.pipeGap,
