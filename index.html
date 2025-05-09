@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird JS</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f0f0f0; }
+        canvas { border: 1px solid black; }
+    </style>
+</head>
+<body>
+    <!-- Canvas 元素将由 env.js 动态创建并添加到 body 中 -->
+    <script type="module">
+        import FlappyBirdEnv from './env.js';
+
+        // 创建环境
+        const env = new FlappyBirdEnv({
+            renderMode: 'human', // 确保设置为 'human' 以便渲染
+            useLidar: false
+        });
+
+        let gameRunning = false;
+        let lastTime = 0;
+        const gameFPS = env.options.fps; // 从env获取FPS
+        const frameInterval = 1000 / gameFPS;
+
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+
+            const deltaTime = currentTime - lastTime;
+
+            if (deltaTime >= frameInterval) {
+                lastTime = currentTime - (deltaTime % frameInterval); // 调整 lastTime
+
+                // 默认不执行任何动作 (action = 0)
+                // 在实际应用中，这里应该根据AI的决策来确定action
+                // 为了演示，我们先让鸟自动下落，通过按键跳跃
+                const { observation, reward, terminated, truncated, info } = env.step(currentAction);
+                
+                // 重置动作，除非有新的输入
+                currentAction = 0; 
+
+                if (terminated) {
+                    console.log('Game Over! Final score:', info.score);
+                    // 可以在这里添加重新开始游戏的逻辑
+                    // 例如：
+                    // alert(`游戏结束! 分数: ${info.score}. 按 OK 重新开始.`);
+                    // startGame(); 
+                    // 或者显示一个 "重新开始" 按钮
+                    showRestartButton();
+                    gameRunning = false;
+                    return;
+                }
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        let currentAction = 0; // 0: 不动, 1: 跳跃
+
+        function handleInput() {
+            currentAction = 1; // 跳跃
+        }
+
+        // 监听键盘空格键和鼠标点击事件
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' && gameRunning) {
+                handleInput();
+            }
+        });
+
+        document.addEventListener('mousedown', () => {
+            if (gameRunning) {
+                handleInput();
+            }
+        });
+        
+        // 触摸事件支持
+        document.addEventListener('touchstart', () => {
+            if (gameRunning) {
+                handleInput();
+            }
+        });
+
+        function startGame() {
+            env.reset();
+            gameRunning = true;
+            currentAction = 0; // 重置动作
+            lastTime = performance.now();
+            hideRestartButton();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function showRestartButton() {
+            let restartButton = document.getElementById('restartButton');
+            if (!restartButton) {
+                restartButton = document.createElement('button');
+                restartButton.id = 'restartButton';
+                restartButton.textContent = '重新开始';
+                restartButton.style.position = 'absolute';
+                restartButton.style.top = '10px';
+                restartButton.style.left = '10px';
+                restartButton.style.padding = '10px 20px';
+                restartButton.style.fontSize = '16px';
+                restartButton.style.cursor = 'pointer';
+                document.body.appendChild(restartButton);
+                restartButton.addEventListener('click', startGame);
+            }
+            restartButton.style.display = 'block';
+        }
+
+        function hideRestartButton() {
+            const restartButton = document.getElementById('restartButton');
+            if (restartButton) {
+                restartButton.style.display = 'none';
+            }
+        }
+
+        // 自动开始游戏
+        startGame();
+    </script>
+</body>
+</html> 
