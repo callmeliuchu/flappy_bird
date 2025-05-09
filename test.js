@@ -10,8 +10,6 @@
  *     print(action,reward)
  */
 
-import FlappyBirdEnv from './env.js';
-
 // 创建测试类
 class FlappyBirdTester {
   constructor() {
@@ -219,5 +217,3 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('Flappy Bird 测试已准备就绪。在控制台中，您可以使用 window.flappyTester 来访问测试实例。');
 });
 
-// 导出测试类
-export default FlappyBirdTester; 
