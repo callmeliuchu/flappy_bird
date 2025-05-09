@@ -111,17 +111,21 @@ class FlappyBirdEnv {
   
   /**
    * 执行动作
-   * @param {Number} action - 0: 不动, 1: 跳跃
+   * @param {Number} action - 0: 不动, 1: 跳跃, 2: 向下加速
    * @returns {Object} 包含观察、奖励、终止标志、截断标志和信息的对象
    */
   step(action) {
     this.frames += 1;
     
-    // 更新鸟的位置
+    // 默认施加重力
     this.bird.velocity += this.options.gravity;
     
-    if (action === 1) {
-      this.bird.velocity = this.options.birdVelocity;
+    if (action === 1) { // 动作 1: 跳跃
+      this.bird.velocity = this.options.birdVelocity; // 设置为向上的速度
+    } else if (action === 2) { // 动作 2: 向下加速
+      // 额外施加向下的力，使其下落更快或更快停止上升
+      // 例如，额外增加 1.5 倍的重力效果
+      this.bird.velocity += this.options.gravity * 1.5; 
     }
     
     this.bird.y += this.bird.velocity;
@@ -341,7 +345,7 @@ class FlappyBirdEnv {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
     // 绘制背景
-    if (this.images.background) {
+    if (this.images.background && this.images.background.complete && this.images.background.naturalHeight !== 0) {
       this.ctx.drawImage(this.images.background, 0, 0, this.canvas.width, this.canvas.height);
     } else {
       this.ctx.fillStyle = '#70c5ce';
@@ -350,7 +354,7 @@ class FlappyBirdEnv {
     
     // 绘制管道
     for (const pipe of this.pipes) {
-      if (this.images.pipe) {
+      if (this.images.pipe && this.images.pipe.complete && this.images.pipe.naturalHeight !== 0) {
         // 上管道（翻转）
         if (pipe.y === 0) {
           this.ctx.save();
@@ -375,7 +379,7 @@ class FlappyBirdEnv {
     }
     
     // 绘制鸟
-    if (this.images.bird) {
+    if (this.images.bird && this.images.bird.complete && this.images.bird.naturalHeight !== 0) {
       this.ctx.drawImage(
         this.images.bird,
         this.bird.x,

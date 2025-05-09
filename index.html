@@ -33,12 +33,10 @@
             if (deltaTime >= frameInterval) {
                 lastTime = currentTime - (deltaTime % frameInterval); // 调整 lastTime
 
-                // 默认不执行任何动作 (action = 0)
-                // 在实际应用中，这里应该根据AI的决策来确定action
-                // 为了演示，我们先让鸟自动下落，通过按键跳跃
+                // 根据 currentAction 执行游戏步骤
                 const { observation, reward, terminated, truncated, info } = env.step(currentAction);
                 
-                // 重置动作，除非有新的输入
+                // 重置动作，除非有新的按键输入覆盖
                 currentAction = 0; 
 
                 if (terminated) {
@@ -56,29 +54,37 @@
             requestAnimationFrame(gameLoop);
         }
 
-        let currentAction = 0; // 0: 不动, 1: 跳跃
+        let currentAction = 0; // 0: 不动, 1: 跳跃, 2: 向下加速
 
-        function handleInput() {
-            currentAction = 1; // 跳跃
+        function handleInput(actionType) {
+            // 只有在游戏进行中且有明确动作时才设置
+            if (gameRunning && (actionType === 1 || actionType === 2)) {
+                currentAction = actionType;
+            }
         }
 
-        // 监听键盘空格键和鼠标点击事件
+        // 监听键盘事件
         document.addEventListener('keydown', (event) => {
-            if (event.code === 'Space' && gameRunning) {
-                handleInput();
+            if (!gameRunning) return; // 游戏未运行时不处理输入
+
+            if (event.code === 'Space' || event.code === 'ArrowUp') {
+                handleInput(1); // 跳跃动作
+            } else if (event.code === 'ArrowDown') {
+                handleInput(2); // 向下加速动作
             }
         });
 
+        // 鼠标点击事件 (保持跳跃功能)
         document.addEventListener('mousedown', () => {
             if (gameRunning) {
-                handleInput();
+                handleInput(1); // 跳跃动作
             }
         });
         
-        // 触摸事件支持
+        // 触摸事件支持 (保持跳跃功能)
         document.addEventListener('touchstart', () => {
             if (gameRunning) {
-                handleInput();
+                handleInput(1); // 跳跃动作
             }
         });
 
