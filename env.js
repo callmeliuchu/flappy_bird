@@ -1,7 +1,10 @@
 /**
  * Flappy Bird Environment for JavaScript
  * 模仿 Gymnasium 接口的 Flappy Bird 环境
+ * 专注于物理和游戏逻辑，渲染逻辑已分离到 render.js
  */
+import FlappyBirdRenderer from './render.js';
+
 class FlappyBirdEnv {
   constructor(options = {}) {
     // 默认配置
@@ -31,53 +34,13 @@ class FlappyBirdEnv {
     this.gameOver = false;
     this.frames = 0;
     
-    // 渲染相关
-    this.canvas = null;
-    this.ctx = null;
-    
-    // 如果需要渲染，则创建画布
-    if (this.options.renderMode === 'human') {
-      this._setupCanvas();
-    }
-    
-    // 资源加载
-    this.images = {
-      bird: null,
-      background: null,
-      pipe: null
-    };
-    
-    this._loadImages();
-  }
-  
-  /**
-   * 设置画布
-   */
-  _setupCanvas() {
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = this.options.width;
-    this.canvas.height = this.options.height;
-    this.ctx = this.canvas.getContext('2d');
-    
-    // 添加到文档中
-    document.body.appendChild(this.canvas);
-  }
-  
-  /**
-   * 加载游戏图片资源
-   */
-  _loadImages() {
-    const birdImg = new Image();
-    birdImg.src = 'assets/bird.png'; // 假设有这个资源路径
-    this.images.bird = birdImg;
-    
-    const bgImg = new Image();
-    bgImg.src = 'assets/background.png';
-    this.images.background = bgImg;
-    
-    const pipeImg = new Image();
-    pipeImg.src = 'assets/pipe.png';
-    this.images.pipe = pipeImg;
+    // 创建渲染器
+    this.renderer = new FlappyBirdRenderer({
+      width: this.options.width,
+      height: this.options.height,
+      renderMode: this.options.renderMode,
+      parentElement: options.parentElement || document.body
+    });
   }
   
   /**
@@ -105,6 +68,9 @@ class FlappyBirdEnv {
     // 获取初始观察
     const observation = this._getObservation();
     const info = this._getInfo();
+    
+    // 渲染初始状态
+    this._updateRenderer();
     
     return { observation, info };
   }
@@ -159,10 +125,8 @@ class FlappyBirdEnv {
       this.gameOver = true;
     }
     
-    // 如果启用了渲染，则渲染游戏
-    if (this.options.renderMode === 'human') {
-      this._render();
-    }
+    // 更新渲染器
+    this._updateRenderer();
     
     // 获取观察和信息
     const observation = this._getObservation();
@@ -179,6 +143,7 @@ class FlappyBirdEnv {
   
   /**
    * 添加新管道
+   * @private
    */
   _addPipe() {
     const pipeWidth = 52;
@@ -205,6 +170,7 @@ class FlappyBirdEnv {
   
   /**
    * 更新管道位置
+   * @private
    */
   _updatePipes() {
     for (let i = 0; i < this.pipes.length; i++) {
@@ -218,6 +184,7 @@ class FlappyBirdEnv {
   /**
    * 检查碰撞
    * @returns {Boolean} 是否发生碰撞
+   * @private
    */
   _checkCollision() {
     // 检查是否撞到地面或天花板
@@ -242,7 +209,8 @@ class FlappyBirdEnv {
   
   /**
    * 获取观察
-   * @returns {Array} 观察数组
+   * @returns {Object} 观察对象
+   * @private
    */
   _getObservation() {
     // 基本观察：鸟的位置、速度和最近管道的位置
@@ -275,6 +243,7 @@ class FlappyBirdEnv {
   /**
    * 获取激光雷达读数（如果启用）
    * @returns {Array} 激光雷达读数数组
+   * @private
    */
   _getLidarReadings() {
     const readings = [];
@@ -313,6 +282,7 @@ class FlappyBirdEnv {
   /**
    * 射线与矩形相交检测
    * @returns {Number} 相交距离，如果不相交则返回Infinity
+   * @private
    */
   _rayRectIntersection(rayOriginX, rayOriginY, rayDirX, rayDirY, rectX, rectY, rectWidth, rectHeight) {
     // 简化的实现，实际应用中可能需要更精确的算法
@@ -327,6 +297,7 @@ class FlappyBirdEnv {
   /**
    * 获取额外信息
    * @returns {Object} 信息对象
+   * @private
    */
   _getInfo() {
     return {
@@ -336,78 +307,22 @@ class FlappyBirdEnv {
   }
   
   /**
-   * 渲染游戏
+   * 更新渲染器
+   * @private
    */
-  _render() {
-    if (!this.ctx) return;
-    
-    // 清除画布
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
-    // 绘制背景
-    if (this.images.background && this.images.background.complete && this.images.background.naturalHeight !== 0) {
-      this.ctx.drawImage(this.images.background, 0, 0, this.canvas.width, this.canvas.height);
-    } else {
-      this.ctx.fillStyle = '#70c5ce';
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-    
-    // 绘制管道
-    for (const pipe of this.pipes) {
-      if (this.images.pipe && this.images.pipe.complete && this.images.pipe.naturalHeight !== 0) {
-        // 上管道（翻转）
-        if (pipe.y === 0) {
-          this.ctx.save();
-          this.ctx.translate(pipe.x + pipe.width / 2, pipe.y + pipe.height / 2);
-          this.ctx.rotate(Math.PI);
-          this.ctx.drawImage(
-            this.images.pipe,
-            -pipe.width / 2,
-            -pipe.height / 2,
-            pipe.width,
-            pipe.height
-          );
-          this.ctx.restore();
-        } else {
-          // 下管道
-          this.ctx.drawImage(this.images.pipe, pipe.x, pipe.y, pipe.width, pipe.height);
-        }
-      } else {
-        this.ctx.fillStyle = '#558022';
-        this.ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
-      }
-    }
-    
-    // 绘制鸟
-    if (this.images.bird && this.images.bird.complete && this.images.bird.naturalHeight !== 0) {
-      this.ctx.drawImage(
-        this.images.bird,
-        this.bird.x,
-        this.bird.y,
-        this.bird.width,
-        this.bird.height
-      );
-    } else {
-      this.ctx.fillStyle = '#ff0000';
-      this.ctx.fillRect(this.bird.x, this.bird.y, this.bird.width, this.bird.height);
-    }
-    
-    // 绘制分数
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.font = '24px Arial';
-    this.ctx.fillText(`Score: ${this.score}`, 10, 30);
-    
-    // 如果游戏结束，显示游戏结束信息
-    if (this.gameOver) {
-      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  _updateRenderer() {
+    // 只有在渲染模式为 'human' 时才渲染
+    if (this.renderer.getRenderMode() === 'human') {
+      // 创建游戏状态对象传递给渲染器
+      const gameState = {
+        bird: this.bird,
+        pipes: this.pipes,
+        score: this.score,
+        gameOver: this.gameOver
+      };
       
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = '36px Arial';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('Game Over', this.canvas.width / 2, this.canvas.height / 2);
-      this.ctx.font = '24px Arial';
-      this.ctx.fillText(`Score: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 40);
+      // 调用渲染器的渲染方法
+      this.renderer.render(gameState);
     }
   }
   
@@ -415,12 +330,8 @@ class FlappyBirdEnv {
    * 关闭环境
    */
   close() {
-    if (this.canvas && this.canvas.parentNode) {
-      this.canvas.parentNode.removeChild(this.canvas);
-    }
-    
-    this.canvas = null;
-    this.ctx = null;
+    // 关闭渲染器
+    this.renderer.close();
   }
 }
 
