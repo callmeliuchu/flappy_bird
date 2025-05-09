@@ -210,5 +210,3 @@ class FlappyBirdRenderer {
     return this.options.renderMode;
   }
 }
-
-export default FlappyBirdRenderer; 
