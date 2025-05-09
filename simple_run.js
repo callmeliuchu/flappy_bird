@@ -159,7 +159,7 @@ class Agent{
             }
 
             let entropy = cross_entropy(out_softmax,rs);
-            console.log('entropy',entropy);
+            // console.log('entropy',entropy);
             let dout = cross_entropy_derive(out_softmax,rs);
             // console.log(dout);
             // console.log(out_softmax);
@@ -199,12 +199,12 @@ console.log('初始状态:', observation);
 
 let agent = new Agent(5, 2);
 
-for(let epoch=0;epoch<10000;epoch++){
+for(let epoch=0;epoch<500;epoch++){
     let rewards = [];
     let agent_outputs = [];
     let {observation:state,info} = env.reset();
     // {birdY: 0.1640625, birdVelocity: -1, pipeX: 0.6527777777777778, pipeTopY: 0.669921875, pipeBottomY: 0.669921875}
-    console.log('state',state);
+    // console.log('state',state);
     let total_reward = 0;
     while(1){
         state = [state.birdY,state.birdVelocity,state.pipeX,state.pipeTopY,state.pipeBottomY];
