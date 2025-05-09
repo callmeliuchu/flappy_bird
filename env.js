@@ -44,6 +44,8 @@ class FlappyBirdEnv {
       renderMode: this.options.renderMode,
       parentElement: options.parentElement || document.body
     });
+
+    this.discountFactor = 0.99; // 奖励衰减因子
   }
   
   /**
@@ -111,15 +113,47 @@ class FlappyBirdEnv {
     const collision = this._checkCollision();
     
     // 计算奖励
-    let reward = 0.1; // 存活奖励
+    let reward = 0;
     
-    // 通过管道获得额外奖励
-    for (const pipe of this.pipes) {
-      if (pipe.x + pipe.width < this.bird.x && !pipe.passed) {
-        pipe.passed = true;
-        this.score += 1;
+    // 基于目标的奖励
+    if (this.reachedGoal()) {
+        reward += 100; // 成功达到目标的大奖励
+    }
+    
+    // 添加基于进度的奖励
+    const distanceToGoal = this.getDistanceToGoal();
+    const previousDistance = this.previousDistanceToGoal || distanceToGoal;
+    const progressReward = previousDistance - distanceToGoal;
+    this.previousDistanceToGoal = distanceToGoal;
+    
+    // 靠近目标时给予正奖励，远离目标时给予负奖励
+    reward += progressReward * 0.5;
+    
+    // 存活奖励 - 鼓励代理继续"活着"
+    reward += 0.1;
+    
+    // 能量效率奖励 - 鼓励节约能量/资源
+    const energyUsed = this.getEnergyUsed();
+    reward -= energyUsed * 0.05;
+    
+    // 探索奖励 - 鼓励探索新区域
+    if (this.visitedNewArea()) {
         reward += 1.0;
-      }
+    }
+    
+    // 行为多样性奖励 - 鼓励尝试不同的动作
+    if (this.isNewAction()) {
+        reward += 0.2;
+    }
+    
+    // 避免危险奖励
+    if (this.isNearObstacle()) {
+        reward -= 0.5; // 轻微惩罚，避免过于保守
+    }
+    
+    // 如果失败，给予较大的负奖励
+    if (this.hasFailed()) {
+        reward -= 20;
     }
     
     // 如果碰撞，给予负奖励并结束游戏
@@ -135,9 +169,15 @@ class FlappyBirdEnv {
     const observation = this._getObservation();
     const info = this._getInfo();
     
+    // 归一化奖励
+    const normalizedReward = this.normalizeReward(reward);
+    
+    // 在step方法中记录当前执行的动作
+    this.lastActionTaken = action;
+    
     return {
       observation,
-      reward,
+      reward: normalizedReward,
       terminated: this.gameOver,
       truncated: false,
       info
@@ -335,6 +375,113 @@ class FlappyBirdEnv {
   close() {
     // 关闭渲染器
     this.renderer.close();
+  }
+
+  // 辅助函数
+  getDistanceToGoal() {
+    // 计算到下一个管道的水平距离
+    const nextPipe = this.pipes.find(pipe => pipe.x + pipe.width > this.bird.x);
+    if (nextPipe) {
+      return nextPipe.x - this.bird.x;
+    }
+    // 如果没有管道，返回屏幕宽度作为默认距离
+    return this.options.width;
+  }
+
+  reachedGoal() {
+    // 当鸟通过管道时视为达到目标
+    for (const pipe of this.pipes) {
+      if (pipe.x + pipe.width < this.bird.x && !pipe.passed) {
+        pipe.passed = true;
+        this.score += 1;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  visitedNewArea() {
+    // 简单实现：当鸟的位置在屏幕的新区域时
+    // 将屏幕分成网格，记录鸟访问过的网格
+    if (!this.visitedAreas) {
+      this.visitedAreas = new Set();
+    }
+    
+    // 将屏幕分成 10x10 的网格
+    const gridSize = 10;
+    const gridX = Math.floor(this.bird.x / (this.options.width / gridSize));
+    const gridY = Math.floor(this.bird.y / (this.options.height / gridSize));
+    const areaKey = `${gridX},${gridY}`;
+    
+    if (!this.visitedAreas.has(areaKey)) {
+      this.visitedAreas.add(areaKey);
+      return true;
+    }
+    return false;
+  }
+
+  isNewAction() {
+    // 跟踪最近的动作，检查当前动作是否与前一个不同
+    if (this.lastAction === undefined) {
+      this.lastAction = -1; // 初始化为一个不可能的动作值
+      return true;
+    }
+    
+    const currentAction = this.lastActionTaken;
+    const isNew = currentAction !== this.lastAction;
+    this.lastAction = currentAction;
+    return isNew;
+  }
+
+  isNearObstacle() {
+    // 检查鸟是否接近管道或屏幕边界
+    const safeDistance = 50; // 安全距离阈值
+    
+    // 检查是否接近屏幕顶部或底部
+    if (this.bird.y < safeDistance || this.bird.y + this.bird.height > this.options.height - safeDistance) {
+      return true;
+    }
+    
+    // 检查是否接近管道
+    for (const pipe of this.pipes) {
+      const horizontalDistance = pipe.x - (this.bird.x + this.bird.width);
+      
+      // 只考虑鸟前方的管道
+      if (horizontalDistance >= 0 && horizontalDistance < safeDistance) {
+        // 检查垂直方向是否会碰撞
+        if (this.bird.y < pipe.y + pipe.height && this.bird.y + this.bird.height > pipe.y) {
+          return true;
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  getEnergyUsed() {
+    // 简单实现：使用鸟的速度绝对值作为能量消耗的估计
+    return Math.abs(this.bird.velocity) * 0.1;
+  }
+
+  hasFailed() {
+    // 检查是否游戏结束
+    return this.gameOver;
+  }
+
+  normalizeReward(reward, minReward = -100, maxReward = 100) {
+    // 将奖励限制在[-1, 1]范围内
+    return Math.max(-1, Math.min(1, reward / Math.max(Math.abs(minReward), Math.abs(maxReward))));
+  }
+
+  calculateReward() {
+    // ... 计算原始奖励 ...
+    
+    // 归一化奖励
+    return this.normalizeReward(reward);
+  }
+
+  applyDiscount(reward, timeStep) {
+    return reward * Math.pow(this.discountFactor, timeStep);
   }
 }
 

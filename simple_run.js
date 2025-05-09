@@ -242,7 +242,7 @@ const epochElement = document.getElementById('currentEpoch');
 
 // 将训练循环包装在一个异步函数中
 async function runTraining() {
-    for(let epoch=0;epoch<50000;epoch++){
+    for(let epoch=0;epoch<500000;epoch++){
         // 更新训练状态显示
         epochElement.textContent = epoch;
         
